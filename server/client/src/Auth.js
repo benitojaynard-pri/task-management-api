@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const navigate = useNavigate();
-
 const Auth = ({ onLoginSuccess }) => {
+  const navigate = useNavigate(); // 
   const [isRegistering, setIsRegistering] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    password: ''
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    username: '', 
+    password: '', 
+    isAdmin: false 
   });
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,77 +21,90 @@ const Auth = ({ onLoginSuccess }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         if (isRegistering) {
           alert("Registration successful! Please login.");
           setIsRegistering(false);
         } else {
-          // 1. Save to localStorage for persistence
+          // Success! Save to local storage
           localStorage.setItem('userId', data._id);
-          localStorage.setItem('isAdmin', data.isAdmin);
           localStorage.setItem('username', data.username);
-  
-          // 2. Pass the data back to App.js (data IS the user object based on your backend)
+          localStorage.setItem('isAdmin', data.isAdmin);
+
           onLoginSuccess(data); 
+          navigate('/'); // Navigate to home/tasks
         }
       } else {
-        // Show the actual error message from your backend
-        alert(data.message || data.error || "Something went wrong");
+        alert(data.message || "Invalid credentials");
       }
     } catch (err) {
       console.error("Auth Error:", err);
-      alert("Could not connect to the server. Is it running on port 5001?");
+      alert("Server is not responding. Check port 5001.");
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h2>{isRegistering ? 'Create Account' : 'Welcome Back'}</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
+    <div style={{ maxWidth: '300px', margin: '50px auto' }}>
+      <h2>{isRegistering ? 'Register' : 'Login'}</h2>
+      <form onSubmit={handleSubmit}>
+        
+        {/* 2. Conditionally show the Name field only during Registration */}
         {isRegistering && (
           <input 
-            name="name" 
+            type="text" 
             placeholder="Full Name" 
-            onChange={handleChange} 
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})} 
             required 
-            style={styles.input}
+            style={{ display: 'block', width: '100%', marginBottom: '10px', padding: '8px' }}
           />
         )}
+
         <input 
-          name="username" 
+          type="text" 
           placeholder="Username" 
-          onChange={handleChange} 
+          value={formData.username}
+          onChange={(e) => setFormData({...formData, username: e.target.value})} 
           required 
-          style={styles.input}
+          style={{ display: 'block', width: '100%', marginBottom: '10px', padding: '8px' }}
         />
+        
         <input 
-          name="password" 
           type="password" 
           placeholder="Password" 
-          onChange={handleChange} 
+          value={formData.password}
+          onChange={(e) => setFormData({...formData, password: e.target.value})} 
           required 
-          style={styles.input}
+          style={{ display: 'block', width: '100%', marginBottom: '10px', padding: '8px' }}
         />
-        <button type="submit" style={styles.button}>
-          {isRegistering ? 'Register' : 'Login'}
+
+          {isRegistering && (
+            <div style={{ marginBottom: '10px', textAlign: 'left' }}>
+              <label style={{ cursor: 'pointer', fontSize: '14px' }}>
+                <input 
+                  type="checkbox" 
+                  checked={formData.isAdmin}
+                  onChange={(e) => setFormData({...formData, isAdmin: e.target.checked})} 
+                  style={{ marginRight: '8px' }}
+                />
+                Register as Administrator
+              </label>
+            </div>
+          )}
+
+        <button type="submit" style={{ width: '100%', padding: '10px', cursor: 'pointer' }}>
+          {isRegistering ? 'Create Account' : 'Login'}
         </button>
       </form>
-      <p onClick={() => setIsRegistering(!isRegistering)} style={styles.toggle}>
+
+      <p onClick={() => setIsRegistering(!isRegistering)} style={{ cursor: 'pointer', color: 'blue', textAlign: 'center', marginTop: '10px' }}>
         {isRegistering ? 'Already have an account? Login' : 'Need an account? Register'}
       </p>
     </div>
   );
-};
-
-const styles = {
-  container: { maxWidth: '400px', margin: '100px auto', textAlign: 'center', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  input: { padding: '10px', fontSize: '16px' },
-  button: { padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer' },
-  toggle: { marginTop: '15px', color: '#007bff', cursor: 'pointer', textDecoration: 'underline' }
 };
 
 export default Auth;

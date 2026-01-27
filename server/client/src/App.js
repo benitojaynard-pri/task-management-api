@@ -1,34 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Auth from './Auth';
-import TaskList from './TaskList'; // Assume your main Task logic is here
+import Tasks from './page/Task';
 
 function App() {
-  // 1. Define the state and the setter function here
   const [currentUser, setCurrentUser] = useState(null);
 
-  const onLoginSuccess = (currentUser) => {
-    setCurrentUser(currentUser); // Now this will work!
-  };
+  // Check if user is already logged in on refresh
+  useEffect(() => {
+    const savedUser = localStorage.getItem('username');
+    const savedId = localStorage.getItem('userId');
+    const savedAdmin = localStorage.getItem('isAdmin') === 'true';
 
-  const handleLoginSuccess = (userData) => {
-    setUser(userData); // userData should contain { id, username, isAdmin }
+    if (savedId) {
+      setCurrentUser({ _id: savedId, username: savedUser, isAdmin: savedAdmin });
+    }
+  }, []);
+
+  const onLoginSuccess = (user) => {
+    setCurrentUser(user);
   };
 
   const handleLogout = () => {
-    setUser(null);
+    localStorage.clear();
+    setCurrentUser(null);
   };
 
   return (
     <div className="App">
       {!currentUser ? (
-        <Auth onLoginSuccess={handleLoginSuccess} />
+        <Auth onLoginSuccess={onLoginSuccess} />
       ) : (
         <div>
-          <nav style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#f4f4f4' }}>
-            <span>Logged in as: <strong>{currentUser.username}</strong> {currentUser.isAdmin && '(Admin)'}</span>
+          <nav style={{ padding: '10px', background: '#eee', display: 'flex', justifyContent: 'space-between' }}>
+            <span>Logged in as: <b>{currentUser.username}</b></span>
             <button onClick={handleLogout}>Logout</button>
           </nav>
-          <TaskList currentUser={currentUser} />
+          <Tasks user={currentUser} />
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ mongoose.connect('mongodb://localhost:27017/taskDB')
 
 // Schemas
 const UserSchema = new mongoose.Schema({
+    name: String,
   username: String,
   password: String,
   isAdmin: Boolean
@@ -31,16 +32,19 @@ async function seedDatabase() {
     // ---- USERS ----
     const users = await User.insertMany([
       {
+        name: 'Neon',
         username: 'neonFox27',
         password: 'F!9xQ2@Lr8',
         isAdmin: true
       },
       {
+        name: 'Byte',
         username: 'byteRider_84',
         password: 'Z7$kP@1mWc',
         isAdmin: false
       },
       {
+        name: 'Nova',
         username: 'silentNova',
         password: 'N#4eT9!qS2',
         isAdmin: false

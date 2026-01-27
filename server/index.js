@@ -6,9 +6,9 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow only your frontend
+  origin: 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'] // Add headers you use
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'userid', 'isadmin'] 
 }));
 
 app.use(express.json());
@@ -21,6 +21,7 @@ mongoose
 
 // Schemas & Models
 const UserSchema = new mongoose.Schema({
+  name: String,
   username: String,
   password: String,
   isAdmin: Boolean
@@ -67,6 +68,7 @@ app.post('/api/auth', async (req, res) => {
     // 3. Return user data (excluding password for security)
     res.json({
       _id: user._id,
+      name: user.name, // <--- Send the name back to the frontend
       username: user.username,
       isAdmin: user.isAdmin,
       message: 'Login successful'
@@ -99,6 +101,66 @@ app.get('/api/tasks/all', async (req, res) => {
 
     const tasks = await Task.find({});
     res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/add', async (req, res) => {
+  try {
+    const { title, userId } = req.body;
+
+    if (!title || !userId) {
+      return res.status(400).json({ error: "Title and UserID are required" });
+    }
+
+    const newTask = new Task({ title, userId });
+    await newTask.save();
+
+    res.status(201).json(newTask);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/tasks/:id
+app.delete('/api/tasks/:id', async (req, res) => {
+  try {
+    await Task.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/tasks/:id (Edit)
+app.put('/api/tasks/:id', async (req, res) => {
+  try {
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id, 
+      { title: req.body.title }, 
+      { new: true }
+    );
+    res.json(updatedTask);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATED: GET /api/tasks/all (Admin only - now fetches user names)
+app.get('/api/tasks/all', async (req, res) => {
+  try {
+    // We can't use .populate() easily without Ref in Schema, 
+    // so let's fetch all tasks and all users to map them.
+    const tasks = await Task.find({});
+    const users = await User.find({}, 'name _id');
+    
+  const taskWithNames = tasks.map(task => {
+  const foundUser = users.find(u => u._id.toString() === task.userId);
+  return { ...task._doc, assignedTo: foundUser ? foundUser.name : 'Unknown' };
+});
+
+    res.json(taskWithNames);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
