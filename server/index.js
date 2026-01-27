@@ -29,7 +29,8 @@ const UserSchema = new mongoose.Schema({
 
 const TaskSchema = new mongoose.Schema({
   title: String,
-  userId: String
+  userId: String,
+  completed: { type: Boolean, default: false } // New field
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -94,13 +95,22 @@ app.get('/api/tasks', async (req, res) => {
 app.get('/api/tasks/all', async (req, res) => {
   try {
     const isAdmin = req.headers.isadmin === 'true';
+    if (!isAdmin) return res.status(403).json({ message: 'Access denied' });
 
-    if (!isAdmin) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
+    // Fetch all tasks and all users
     const tasks = await Task.find({});
-    res.json(tasks);
+    const users = await User.find({}, 'name _id');
+
+    // Map the user name to each task
+    const tasksWithNames = tasks.map(task => {
+      const owner = users.find(u => u._id.toString() === task.userId);
+      return {
+        ...task._doc,
+        assignedToName: owner ? owner.name : "Unknown User"
+      };
+    });
+
+    res.json(tasksWithNames);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -147,24 +157,24 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// UPDATED: GET /api/tasks/all (Admin only - now fetches user names)
-app.get('/api/tasks/all', async (req, res) => {
+app.put('/api/tasks/:id/toggle', async (req, res) => {
   try {
-    // We can't use .populate() easily without Ref in Schema, 
-    // so let's fetch all tasks and all users to map them.
-    const tasks = await Task.find({});
-    const users = await User.find({}, 'name _id');
-    
-  const taskWithNames = tasks.map(task => {
-  const foundUser = users.find(u => u._id.toString() === task.userId);
-  return { ...task._doc, assignedTo: foundUser ? foundUser.name : 'Unknown' };
-});
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: "Task not found" });
 
-    res.json(taskWithNames);
+    task.completed = !task.completed; // Flip the status
+    await task.save();
+    
+    res.json(task);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ... existing imports ...
+
+// UPDATED: GET /api/tasks/all (Admin only)
+
 
 // Start server (macOS-safe port)
 app.listen(5001, () => {
