@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const navigate = useNavigate();
 
 const Auth = ({ onLoginSuccess }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -17,27 +20,34 @@ const Auth = ({ onLoginSuccess }) => {
     const endpoint = isRegistering ? '/api/users' : '/api/auth';
     
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`http://localhost:5001${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
         if (isRegistering) {
           alert("Registration successful! Please login.");
           setIsRegistering(false);
         } else {
-          // Success! Pass user data (including isAdmin) back to App.js
-          onLoginSuccess(data.user); 
+          // 1. Save to localStorage for persistence
+          localStorage.setItem('userId', data._id);
+          localStorage.setItem('isAdmin', data.isAdmin);
+          localStorage.setItem('username', data.username);
+  
+          // 2. Pass the data back to App.js (data IS the user object based on your backend)
+          onLoginSuccess(data); 
         }
       } else {
-        alert(data.message || "Something went wrong");
+        // Show the actual error message from your backend
+        alert(data.message || data.error || "Something went wrong");
       }
     } catch (err) {
       console.error("Auth Error:", err);
+      alert("Could not connect to the server. Is it running on port 5001?");
     }
   };
 

@@ -5,7 +5,12 @@ const cors = require('cors');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // Allow only your frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'] // Add headers you use
+}));
+
 app.use(express.json());
 
 // MongoDB connection
@@ -42,6 +47,33 @@ app.post('/api/users', async (req, res) => {
     res.status(201).json({ message: 'User Created' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth (Login)
+app.post('/api/auth', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // 1. Find user by username
+    const user = await User.findOne({ username });
+
+    // 2. Check if user exists and password matches
+    // Note: In production, never store or compare passwords in plain text!
+    if (!user || user.password !== password) {
+      return res.status(400).json({ message: 'Invalid username or password' });
+    }
+
+    // 3. Return user data (excluding password for security)
+    res.json({
+      _id: user._id,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      message: 'Login successful'
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
