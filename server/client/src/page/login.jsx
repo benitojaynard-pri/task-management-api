@@ -1,6 +1,51 @@
 import React from 'react';
 
 const LoginPage = () => {
+    const navigate = useNavigate(); // 
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [formData, setFormData] = useState({ 
+      name: '', 
+      username: '', 
+      password: '', 
+      isAdmin: false 
+    });
+  
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      const endpoint = isRegistering ? '/api/users' : '/api/auth';
+      
+      try {
+        const response = await fetch(`http://localhost:5001${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+  
+        const data = await response.json();
+  
+        if (response.ok) {
+          if (isRegistering) {
+            alert("Registration successful! Please login.");
+            setIsRegistering(false);
+          } else {
+            // Success! Save to local storage
+            localStorage.setItem('userId', data._id);
+            localStorage.setItem('username', data.username);
+            localStorage.setItem('isAdmin', data.isAdmin);
+  
+            onLoginSuccess(data); 
+            navigate('/'); // Navigate to home/tasks
+          }
+        } else {
+          alert(data.message || "Invalid credentials");
+        }
+      } catch (err) {
+        console.error("Auth Error:", err);
+        alert("Server is not responding. Check port 5001.");
+      }
+    };
+
+ {
   return (
     <div className="min-h-screen bg-[#0f111a] flex flex-col items-center justify-center p-6">
       
@@ -70,5 +115,6 @@ const SocialBtn = ({ label }) => (
     Continue with {label}
   </button>
 );
+}
 
 export default LoginPage;
