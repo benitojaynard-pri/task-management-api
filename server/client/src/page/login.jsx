@@ -1,157 +1,146 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../App.css";
 
 const LoginPage = ({ onLoginSuccess }) => {
-    const navigate = useNavigate();
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [loading, setLoading] = useState(false);
-    
-    // Pinagsamang state para sa form base sa iyong pattern
-    const [formData, setFormData] = useState({ 
-        name: '', 
-        username: '', 
-        password: '', 
-        isAdmin: false 
-    });
+  const navigate = useNavigate();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        const endpoint = isRegistering ? '/api/users' : '/api/auth';
-        
-        try {
-            const response = await fetch(`http://localhost:5001${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
+  const [formData, setFormData] = useState({
+    name: "",
+    username: "",
+    email: "",
+    mobileNumber: "",
+    birthdate: "",
+    password: ""
+  });
 
-            const data = await response.json();
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-            if (response.ok) {
-                if (isRegistering) {
-                    alert("Registration successful! Please login.");
-                    setIsRegistering(false);
-                    // I-reset ang form pagkatapos mag-register
-                    setFormData({ name: '', username: '', password: '', isAdmin: false });
-                } else {
-                    // Success! Save to local storage
-                    localStorage.setItem('userId', data._id);
-                    localStorage.setItem('username', data.username);
-                    localStorage.setItem('isAdmin', data.isAdmin);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log("Submit button clicked!"); // <--- TEST LOG
+    console.log("Current Payload:", isRegistering ? formData : { username: formData.username, password: formData.password });
+    setLoading(true);
 
-                    onLoginSuccess(data); 
-                    navigate('/'); // Navigate to home/tasks
-                }
-            } else {
-                alert(data.message || "Invalid credentials");
-            }
-        } catch (err) {
-            console.error("Auth Error:", err);
-            alert("Server is not responding. Check port 5001.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    const endpoint = isRegistering
+      ? "http://localhost:5001/api/users"
+      : "http://localhost:5001/api/auth/login";
 
-    return (
-        <div className="min-h-screen bg-[#0f111a] flex flex-col items-center justify-center p-6 font-sans">
-            {/* Nexus Brand Logo */}
-            <div className="flex items-center gap-3 mb-12">
-                <h1 className="text-white text-5xl font-bold tracking-tighter">NEXUS</h1>
-                <div className="w-8 h-8 bg-[#a855f7] rotate-45 rounded-sm flex items-center justify-center">
-                    <div className="w-4 h-4 bg-[#0f111a] rotate-45"></div>
-                </div>
-            </div>
+    const payload = isRegistering
+      ? formData
+      : { username: formData.username, password: formData.password };
 
-            {/* Login/Register Card Container */}
-            <div className="w-full max-w-2xl bg-[#1a1d26] rounded-[2.5rem] border border-white/5 shadow-2xl p-12">
-                <div className="text-center mb-10">
-                    <h2 className="text-white text-5xl font-bold mb-4">
-                        {isRegistering ? 'Join Nexus' : 'Welcome to Nexus'}
-                    </h2>
-                    <p className="text-gray-400 text-xl tracking-wide">Connect. Collaborate. Create</p>
-                </div>
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-                <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
-                    <div className="space-y-4">
-                        {/* Conditionally show Name field during Registration */}
-                        {isRegistering && (
-                            <input 
-                                type="text" 
-                                required
-                                placeholder="Full Name" 
-                                value={formData.name}
-                                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                className="w-full bg-[#12141c] border-2 border-[#a855f7]/20 rounded-2xl px-6 py-4 text-white focus:border-[#a855f7] outline-none transition-all placeholder:text-gray-600"
-                            />
-                        )}
+      const data = await res.json();
 
-                        <input 
-                            type="text" 
-                            required
-                            placeholder="Username" 
-                            value={formData.username}
-                            onChange={(e) => setFormData({...formData, username: e.target.value})}
-                            className="w-full bg-[#12141c] border-2 border-[#a855f7]/20 rounded-2xl px-6 py-4 text-white focus:border-[#a855f7] outline-none transition-all placeholder:text-gray-600"
-                        />
-                        
-                        <input 
-                            type="password" 
-                            required
-                            placeholder="Password" 
-                            value={formData.password}
-                            onChange={(e) => setFormData({...formData, password: e.target.value})}
-                            className="w-full bg-[#12141c] border-2 border-[#a855f7]/20 rounded-2xl px-6 py-4 text-white focus:border-[#a855f7] outline-none transition-all placeholder:text-gray-600"
-                        />
+      if (!res.ok) {
+        alert(data.message || "Something went wrong");
+        return;
+      }
 
-                        {/* Admin Checkbox during Registration */}
-                        {isRegistering && (
-                            <div className="flex items-center gap-3 px-2">
-                                <input 
-                                    type="checkbox" 
-                                    id="isAdmin"
-                                    checked={formData.isAdmin}
-                                    onChange={(e) => setFormData({...formData, isAdmin: e.target.checked})}
-                                    className="w-5 h-5 accent-[#a855f7]"
-                                />
-                                <label htmlFor="isAdmin" className="text-gray-400 cursor-pointer text-sm">
-                                    Register as Administrator
-                                </label>
-                            </div>
-                        )}
-                    </div>
+      if (isRegistering) {
+        alert("Registration successful! Please log in.");
+        setIsRegistering(false);
+      } else {
+        // Save auth data
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
 
-                    <div className="flex flex-col items-center gap-4">
-                        <button 
-                            type="submit"
-                            disabled={loading}
-                            className="w-full sm:w-1/2 bg-gradient-to-r from-[#a855f7] to-[#d946ef] text-white font-bold py-4 rounded-2xl hover:scale-105 transition-transform shadow-lg shadow-purple-500/20 disabled:opacity-50"
-                        >
-                            {loading ? 'Processing...' : (isRegistering ? 'Sign Up' : 'Log In')}
-                        </button>
-                    </div>
+        onLoginSuccess(data.user);
+        navigate("/");
+      }
+    } catch (err) {
+      alert("Server not responding on port 5001");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    <div className="text-center py-4">
-                        <p className="text-gray-400">
-                            {isRegistering ? 'Already have an account?' : "Don't have an account?"}
-                            <button 
-                                type="button"
-                                onClick={() => setIsRegistering(!isRegistering)}
-                                className="text-[#a855f7] font-semibold ml-2 hover:underline focus:outline-none"
-                            >
-                                {isRegistering ? 'Log In' : 'Sign Up'}
-                            </button>
-                        </p>
-                    </div>
-                </form>
-            </div>
-
-            <div className="mt-12 text-gray-600 text-[10px] uppercase tracking-[0.2em]">
-                {new Date().toLocaleString()} PST
-            </div>
+  return (
+    <div className="login-page">
+      <div className="brand">
+        <h1>NEXUS</h1>
+        <div className="logo-box">
+          <div className="logo-inner" />
         </div>
-    );
+      </div>
+
+      <div className="card">
+        <h2>{isRegistering ? "Join Nexus" : "Welcome to Nexus"}</h2>
+        <p className="subtitle">Connect. Collaborate. Create</p>
+
+        <form onSubmit={handleSubmit}>
+          {isRegistering && (
+            <>
+              <input
+                name="name"
+                placeholder="Full Name"
+                required
+                onChange={handleChange}
+              />
+
+              <input
+                name="email"
+                placeholder="Email (optional)"
+                onChange={handleChange}
+              />
+
+              <input
+                name="mobileNumber"
+                placeholder="Mobile Number (optional)"
+                onChange={handleChange}
+              />
+
+              <input
+                name="birthdate"
+                type="date"
+                required
+                onChange={handleChange}
+              />
+            </>
+          )}
+
+          <input
+            name="username"
+            placeholder="Username"
+            required
+            value={formData.username}
+            onChange={handleChange}
+          />
+
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            required
+            value={formData.password} // Idagdag ito
+            onChange={handleChange}
+          />
+
+          <button type="submit" disabled={loading}>
+            {loading ? "Processing..." : isRegistering ? "Sign Up" : "Log In"}
+          </button>
+
+          <p className="toggle">
+            {isRegistering ? "Already have an account?" : "Don't have an account?"}
+            <span onClick={() => setIsRegistering(!isRegistering)}>
+              {isRegistering ? " Log In" : " Sign Up"}
+            </span>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default LoginPage;

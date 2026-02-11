@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/taskDB')
+mongoose.connect('mongodb://localhost:27017/social_media')
   .then(() => console.log('MongoDB connected for seeding'))
   .catch(err => console.error(err));
 
@@ -13,9 +13,11 @@ const UserSchema = new mongoose.Schema({
   isAdmin: Boolean
 });
 
-const TaskSchema = new mongoose.Schema({
-  title: String,
-  userId: String
+const postSchema = new mongoose.Schema({
+  post: String,
+  userId: String,
+  comments: String,
+
 });
 
 // Models
@@ -37,18 +39,6 @@ async function seedDatabase() {
         password: 'F!9xQ2@Lr8',
         isAdmin: true
       },
-      {
-        name: 'Byte',
-        username: 'byteRider_84',
-        password: 'Z7$kP@1mWc',
-        isAdmin: false
-      },
-      {
-        name: 'Nova',
-        username: 'silentNova',
-        password: 'N#4eT9!qS2',
-        isAdmin: false
-      }
     ]);
 
     console.log('Users seeded');
