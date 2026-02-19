@@ -1,18 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
 
 const LoginPage = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Pinagsamang fields para sa Login at Register base sa register.jsx mo
   const [formData, setFormData] = useState({
     name: "",
-    username: "",
-    email: "",
-    mobileNumber: "",
-    birthdate: "",
+    username: "", // Gagamitin para sa login
+    email: "",    // Gagamitin para sa register
     password: ""
   });
 
@@ -22,16 +20,18 @@ const LoginPage = ({ onLoginSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submit button clicked!"); // <--- TEST LOG
-    console.log("Current Payload:", isRegistering ? formData : { username: formData.username, password: formData.password });
     setLoading(true);
 
-    const endpoint = isRegistering
-      ? "http://localhost:5001/api/users"
+    /* Endpoint Logic: 
+       Login: /api/auth/login
+       Register: /api/add (mula sa iyong register.jsx)
+    */
+    const endpoint = isRegistering 
+      ? "http://localhost:5001/api/api/users" 
       : "http://localhost:5001/api/auth/login";
 
-    const payload = isRegistering
-      ? formData
+    const payload = isRegistering 
+      ? { name: formData.name, email: formData.email, password: formData.password }
       : { username: formData.username, password: formData.password };
 
     try {
@@ -42,101 +42,114 @@ const LoginPage = ({ onLoginSuccess }) => {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Something went wrong");
-        return;
-      }
+      
+      if (!res.ok) throw new Error(data.message || "Action failed");
 
       if (isRegistering) {
-        alert("Registration successful! Please log in.");
-        setIsRegistering(false);
+        alert("Registration Successful! Please Login.");
+        setIsRegistering(false); // Balik sa login mode
+        setFormData({ ...formData, password: "" }); // Clear password for safety
       } else {
-        // Save auth data
+        // Login Success
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-
         onLoginSuccess(data.user);
         navigate("/");
       }
     } catch (err) {
-      alert("Server not responding on port 5001");
+      alert(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <div className="brand">
-        <h1>NEXUS</h1>
-        <div className="logo-box">
+    <div className="auth-container">
+      <div className="brand-text">
+        <span>NEXUS</span>
+        <div className="logo-square">
           <div className="logo-inner" />
         </div>
       </div>
 
-      <div className="card">
-        <h2>{isRegistering ? "Join Nexus" : "Welcome to Nexus"}</h2>
-        <p className="subtitle">Connect. Collaborate. Create</p>
-
-        <form onSubmit={handleSubmit}>
-          {isRegistering && (
-            <>
-              <input
-                name="name"
-                placeholder="Full Name"
-                required
-                onChange={handleChange}
-              />
-
-              <input
-                name="email"
-                placeholder="Email (optional)"
-                onChange={handleChange}
-              />
-
-              <input
-                name="mobileNumber"
-                placeholder="Mobile Number (optional)"
-                onChange={handleChange}
-              />
-
-              <input
-                name="birthdate"
-                type="date"
-                required
-                onChange={handleChange}
-              />
-            </>
-          )}
-
-          <input
-            name="username"
-            placeholder="Username"
-            required
-            value={formData.username}
-            onChange={handleChange}
-          />
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            required
-            value={formData.password} // Idagdag ito
-            onChange={handleChange}
-          />
-
-          <button type="submit" disabled={loading}>
-            {loading ? "Processing..." : isRegistering ? "Sign Up" : "Log In"}
-          </button>
-
-          <p className="toggle">
-            {isRegistering ? "Already have an account?" : "Don't have an account?"}
-            <span onClick={() => setIsRegistering(!isRegistering)}>
-              {isRegistering ? " Log In" : " Sign Up"}
-            </span>
+      <div className="auth-card">
+        <div className="text-center mb-10">
+          <h2 className="text-white text-5xl font-bold mb-4">
+            {isRegistering ? "Join the Nexus" : "Welcome Back"}
+          </h2>
+          <p className="text-gray-400 text-xl tracking-wide">
+            {isRegistering ? "Create your Identity Rail profile" : "Connect. Collaborate. Create"}
           </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
+          <div className="space-y-4">
+            {/* Register-only Fields */}
+            {isRegistering && (
+              <>
+                <input
+                  name="name"
+                  placeholder="Full Name"
+                  className="nexus-input"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Email Address"
+                  className="nexus-input"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </>
+            )}
+
+            {/* Login-only Field */}
+            {!isRegistering && (
+              <input
+                name="username"
+                placeholder="Username"
+                className="nexus-input"
+                required
+                value={formData.username}
+                onChange={handleChange}
+              />
+            )}
+
+            {/* Field for both */}
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              className="nexus-input"
+              required
+              value={formData.password}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="flex flex-col items-center gap-6 pt-4">
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="btn-nexus-primary w-full py-4 text-sm uppercase tracking-widest bg-gradient-to-r from-[#a855f7] to-[#d946ef]"
+            >
+              {loading ? "Processing..." : isRegistering ? "Initialize Profile" : "Access Nexus"}
+            </button>
+            
+            <p className="text-gray-400 text-sm">
+              {isRegistering ? "Already have an account?" : "New to the network?"}
+              <span 
+                onClick={() => setIsRegistering(!isRegistering)}
+                className="text-[#a855f7] font-bold ml-2 cursor-pointer hover:underline"
+              >
+                {isRegistering ? "Log In" : "Sign Up"}
+              </span>
+            </p>
+          </div>
         </form>
       </div>
     </div>
